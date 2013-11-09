@@ -14,7 +14,11 @@ abstract class QuickCheckHeap extends Properties("Heap") with IntHeap {
     findMin(h) == a
   }
   
-  
+  property("delete min") = forAll { a: Int =>
+    val heap = insert(a, empty)
+    val newEmpty = deleteMin(heap)
+    newEmpty == empty
+  }
   
   
   property("min of 2") = forAll { pair: (Int, Int) =>
@@ -24,9 +28,40 @@ abstract class QuickCheckHeap extends Properties("Heap") with IntHeap {
     else  findMin(heap) == second
   }
   
+  def buildList(heap: H): List[Int] = {
+    def loop(acc:List[Int], heap: H): List[Int] =
+      if (heap == empty) acc.reverse
+      else {
+        val min = findMin(heap)
+        loop(min::acc, deleteMin(heap))
+      }
+    loop(Nil, heap)
+  }
+  
+  def isSorted(list: List[Int]): Boolean = {
+    def matchAndCheck(soFar: Boolean, list: List[Int]):Boolean = {
+      list match {
+        case Nil => soFar
+        case head::Nil => soFar
+        case first::second::tail => {
+          if(first > second) false
+          else matchAndCheck(true, second::tail)
+        }
+      }
+    }
+    matchAndCheck(true, list)
+  }
+  
+  property("build a sorted list") = forAll { heap: H =>
+       val sortedList = buildList(heap)
+       isSorted(sortedList)
+  }
+  
 
-  lazy val genHeap: Gen[H] = ??? //need to wrap your head around this non-oo heap stuff,
-  //prolly pretty simple: Heap is just a wrapper so you can do scala-style 00 testing
+  lazy val genHeap: Gen[H] = for {
+	  int <- arbitrary[Int]
+	  heap <-  oneOf(value(empty), genHeap)
+  }  yield insert(int, heap)
 
   implicit lazy val arbHeap: Arbitrary[H] = Arbitrary(genHeap)
 
