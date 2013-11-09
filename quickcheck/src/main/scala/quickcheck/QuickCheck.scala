@@ -20,6 +20,17 @@ abstract class QuickCheckHeap extends Properties("Heap") with IntHeap {
     newEmpty == empty
   }
   
+  property("delete min actually deletes the min") = forAll {heap: H =>
+    if (heap != empty) {
+	  	val min = findMin(heap)
+	  	val newHeap = deleteMin(heap)
+	  	if (newHeap != empty)
+	  		min != findMin(newHeap)
+	  	else true
+  	} else true
+  }
+
+  
   
   property("min of 2") = forAll { pair: (Int, Int) =>
     val (first, second) = pair
@@ -51,17 +62,56 @@ abstract class QuickCheckHeap extends Properties("Heap") with IntHeap {
     }
     matchAndCheck(true, list)
   }
+//  
+//  property("build a sorted list") = forAll { heap: H =>
+//       val sortedList = buildList(heap)
+//       isSorted(sortedList)
+//  }
   
-  property("build a sorted list") = forAll { heap: H =>
-       val sortedList = buildList(heap)
-       isSorted(sortedList)
-  }
+  property("build a sorted list when u meld") = forAll { heaps: (H, H) =>
+    val (heap0, heap1) = heaps
+    val newHeap = meld(heap0, heap1)
+    val sortedList = buildList(newHeap)
+    isSorted(sortedList)
+  }	
+  
+//  property("minimum of two heaps") = forAll {heaps: (H, H) =>
+//    	val (heap0, heap1) = heaps
+//    	val (min0, min1) = (findMin(heap0), findMin(heap1))
+//    	val newHeap = meld(heap0, heap1)
+//    	if(newHeap == empty) true
+//    	else {
+//	    	val singleMin = findMin(newHeap)
+//	    	(singleMin == min0) || (singleMin == min1)
+//    	}
+//    }
+//  
+// 
+//  property("inserted nums get to the right place") = forAll { heapAndNum: (H, Int) =>
+//    val (heap, num) = heapAndNum
+//    val min = findMin(heap)
+//    val insertedHeap = insert(num, heap)
+//    if (num <= min) {
+//      findMin(insertedHeap) == num
+//    } else {
+//      findMin(insertedHeap) < num
+//    }  
+//  }
+//  
+//  property("meld with empty") = forAll { heap: H =>
+//    if (heap != empty) {
+//        val min = findMin(heap)
+//	    val newHeap = meld(heap, empty)
+//	    min == findMin(newHeap)	
+//    } else true
+//  }
   
 
   lazy val genHeap: Gen[H] = for {
 	  int <- arbitrary[Int]
 	  heap <-  oneOf(value(empty), genHeap)
-  }  yield insert(int, heap)
+	  isEmpty <- arbitrary[Boolean]
+  }  yield if(isEmpty) empty else insert(int, heap)
 
   implicit lazy val arbHeap: Arbitrary[H] = Arbitrary(genHeap)
 
