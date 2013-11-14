@@ -75,9 +75,18 @@ abstract class CircuitSimulator extends Simulator {
     andGate(a11,a21,out0)
     inverter(out0, output)
   }
+  
+  private def converter(controls: List[Wire], output: List[Wire]) = {
+	 //TODO: the real work: change an output based on controls, using gates
+  }
 
   def demux(in: Wire, c: List[Wire], out: List[Wire]) {
-    ???
+    for (wire <- out)
+      wire setSignal false
+      // this should ALL be in terms of gates? Yes, b/c then it doesn't delay
+      // this is a good way to sketch it out, tho
+    if(in.getSignal)
+      converter(c, out)
   }
 
 }
