@@ -41,27 +41,45 @@ class EpidemySimulator extends Simulator {
     var row: Int = randomBelow(roomRows)
     var col: Int = randomBelow(roomColumns)
 
-    def elminateRooms(rooms: Vector[(Int, Int)]) ={
-      val result = if(dead) Vector[(Int, Int)]()
-      else rooms
-      //TODO: eliminate rooms with vis infectious, handle deadness
-      // edges of map should wrap around world
-      result
+    type Rooms = Vector[(Int, Int)]
+    
+    def locations(personCheck: Person => Boolean)= {
+      persons.withFilter(personCheck).map((p:Person) => (p.row, p.col))
+    }
+    
+    def elminateRooms(rooms:Rooms):Rooms = {
+      if(dead) Vector[(Int, Int)]()
+      else {
+        val sickLocations = locations(_.sick)
+        //should be cool cause deadsys stay sick
+        val noSick = rooms.diff(sickLocations)
+        val wrapped = noSick.map{case (r, c) => (if (r >= roomRows) r - roomRows else r,
+        										if ( c >= roomColumns) c - roomColumns else c)}
+        wrapped
+      }
     }
     
     def postMove():Unit = {
-      //TODO: get infected if relevant
+      val infectedLocations = locations(_.infected)
+      if(!infected && !immune && infectedLocations.exists( _ == (row, col)))
+        //TODO: in this case, get infected with appropriate probablity
+        // if that happens then you've got a while other function with lots of timing duties
+        
+      //TODO: get infected (a whole thing with lots of other events) if relevant
       //add next move <- this is fine if stuff before can handle deadness and stuff
+      addNextMove()
+    }
+    
+    def makeMove(choices: Rooms) {
+		  val (newRow, newCol) = choices(randomBelow(choices.length))
+		  row = newRow
+		  col = newCol
     }
     
     def move():Unit = {
       val adjacent = Vector((row, col+1),(row+1, col), (row-1, col), (row, col-1))
       val choices = elminateRooms(adjacent)
-      if(choices.length > 0){
-	      val (newRow, newCol) = choices(randomBelow(choices.length))
-	      row = newRow
-	      col = newCol
-      }
+      if(choices.length > 0) makeMove(choices)	
       postMove()
     }
     
@@ -71,9 +89,6 @@ class EpidemySimulator extends Simulator {
     }
     
     addNextMove() //start things off
-    //
-    // to complete with simulation logic
-    //
   }
  
 }
