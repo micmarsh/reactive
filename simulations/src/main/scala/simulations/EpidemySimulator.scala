@@ -41,6 +41,8 @@ class EpidemySimulator extends Simulator {
     var row: Int = randomBelow(roomRows)
     var col: Int = randomBelow(roomColumns)
 
+    
+    //TODO move a lot of this shit out of person class, maybe keep only mutators in here
     type Rooms = Vector[(Int, Int)]
     
     def locations(personCheck: Person => Boolean)= {
