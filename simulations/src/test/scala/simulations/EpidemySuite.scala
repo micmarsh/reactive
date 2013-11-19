@@ -32,6 +32,9 @@ class EpidemySuite extends FunSuite {
 
     val testDays = 100
 
+    println("Agenda homie")
+    println(es.agenda)
+    
     while(!es.agenda.isEmpty && es.agenda.head.time < testDays){
       es.next
 

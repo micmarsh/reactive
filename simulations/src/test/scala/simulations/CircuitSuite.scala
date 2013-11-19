@@ -63,11 +63,91 @@ class CircuitSuite extends CircuitSimulator with FunSuite {
   }
   
   test("orGate2 example") {
-    orGateTest(orGate2)
+     orGateTest(orGate2)
+  }
+  
+  test("super trivial demuxer") {
+    val in, out = new Wire
+    demux(in, List(), List(out))
+    
+    in setSignal true
+    run
+    assert(out.getSignal === true, "true goes thru")
+    
+    in setSignal false
+    run
+    assert(out.getSignal === false, "false too")
   }
 
-  //
-  // to complete with tests for orGate, demux, ...
-  //
-
+  test("still pretty trivial demuxer") {
+    val in, control = new Wire
+    val outs = (for (i <- (0 until 2)) yield new Wire).toList
+    demux(in, List(control), outs)
+    def checkOuts(out0:Boolean, out1:Boolean) =
+      outs(0).getSignal == out0 &&
+      outs(1).getSignal == out1
+    
+    in setSignal false
+    run
+    assert(checkOuts(false, false), "Everything is turned off")
+    
+    in setSignal true
+    run
+    assert(checkOuts(true, false), "redirect to first output")
+    
+    control setSignal true
+    run
+    assert(checkOuts(false, true), "redirect to second output")
+    
+    println(outs map (x => x.getSignal))
+    
+    in setSignal false
+    run
+    assert(checkOuts(false, false), "turn everything back off")
+    
+  }
+  
+  def tenRandomIntegers() = {
+    val upperLimit = 10
+    for (i <- (1 to 10))
+       yield math.floor(math.random * upperLimit).toInt
+  }
+  
+  def someWires(howMany:Int) = 
+    (for (i <- (1 to howMany)) yield new Wire).toList
+  
+  def makeADemuxer(number:Int) = {
+    val in = new Wire
+    val controls = someWires(number)
+    val numOuts = math.pow(2, number).toInt
+    val outs = someWires(numOuts)
+    demux(in, controls, outs)
+    (in, controls, outs)
+  }
+  
+  test("a demuxer w/ two controls") {
+    val numControls = 2
+    val (in, controls, outputs) = makeADemuxer(numControls)
+    
+    assert(outputs.forall(w => !w.getSignal), "everything starts turned off")
+    
+    in setSignal true
+    run
+    assert(outputs(0).getSignal === true, "output to 0")
+    
+    controls(1) setSignal true
+    run
+    println(outputs.map(x => x.getSignal))
+    //problem! flip the first switch and shit goes over to 2 instead of one
+    //flip the second instead and see what happens
+    //flipping just the second maps it to 1. Hypothesis: shit is fucked up in "the middle"
+    //but flipping both or none gets it to the right place
+    //okay interesting, flipping first when there's 8 outputs also throws this shit over to 2
+    
+    //right now focus on the case with 4, b/c it will probably lead to victory
+    assert(outputs(1).getSignal === true, "output to 1")
+    
+    
+  }
+  
 }
