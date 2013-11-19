@@ -60,10 +60,12 @@ class EpidemySimulator extends Simulator {
     }
     
     def postMove():Unit = {
-      val infectedLocations = locations(_.infected)
-      if(!infected && !immune && infectedLocations.exists( _ == (row, col)))
-        //TODO: in this case, get infected with appropriate probablity
+      
+      if(!infected && !immune && locations(_.infected).exists( _ == (row, col)))
+        //TODO: in this case, get infected with appropriate probability
         // if that happens then you've got a while other function with lots of timing duties
+        // random note: on that: immune is basically useless, but be sure to use it when appropriate
+        // in case its tested for
         
       //TODO: get infected (a whole thing with lots of other events) if relevant
       //add next move <- this is fine if stuff before can handle deadness and stuff
@@ -77,7 +79,7 @@ class EpidemySimulator extends Simulator {
     }
     
     def move():Unit = {
-      val adjacent = Vector((row, col+1),(row+1, col), (row-1, col), (row, col-1))
+      val adjacent = Vector((row, col+1), (row+1, col), (row-1, col), (row, col-1))
       val choices = elminateRooms(adjacent)
       if(choices.length > 0) makeMove(choices)	
       postMove()
