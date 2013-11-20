@@ -62,7 +62,21 @@ class EpidemySimulator extends Simulator {
     }
     
     def infectMe:Unit = {
-      
+      infected = true
+      afterDelay(6) {sick = true}
+      afterDelay(14) {if(random < 0.25) dead = true}
+      afterDelay(16) {
+        if (!dead){
+          immune = true
+          sick = false
+        } 
+      }
+      afterDelay(18) {
+        if(!dead) {
+          immune = false
+          infected = false
+        }
+      }
     }
     
     def maybeInfectMe: Unit = {
@@ -70,17 +84,10 @@ class EpidemySimulator extends Simulator {
     }
     
     def postMove:Unit = {
-      
       if(!infected && !immune && locations(_.infected).exists( _ == (row, col)))
         maybeInfectMe
-        //TODO: in this case, get infected with appropriate probability
-        // if that happens then you've got a while other function with lots of timing duties
-        // random note: on that: immune is basically useless, but be sure to use it when appropriate
-        // in case its tested for
-        
-      //TODO: get infected (a whole thing with lots of other events) if relevant
-      //add next move <- this is fine if stuff before can handle deadness and stuff
-      addNextMove
+      if (!dead) //checking deadness in two places  
+    	 addNextMove
     }
     
     def makeMove(choices: Rooms) {
