@@ -25,7 +25,7 @@ class EpidemySimulator extends Simulator {
     while (infected < maxToInfect ) {
       var toInfect = people(randomBelow(population))
       if (!toInfect.infected){
-        toInfect.infected = true
+        toInfect.infectMe
         infected += 1
       }
     }

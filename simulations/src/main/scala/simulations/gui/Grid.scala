@@ -8,8 +8,9 @@ class Grid[A: ClassTag](val height: Int, val width: Int) extends Function2[Int,I
   
   private val delegate = new Array[A](height * width)
   
-  override def apply(row: Int, col: Int): A =
+  override def apply(row: Int, col: Int): A = {
     delegate(row % height * width + col % width)
+  }
   
   def update(row: Int, col: Int, elem: A) {
     delegate(row % height * width + col % width) = elem

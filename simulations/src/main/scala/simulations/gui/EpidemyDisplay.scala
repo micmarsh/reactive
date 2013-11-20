@@ -25,7 +25,11 @@ object EpidemyDisplay extends EpidemySimulator with App {
   var historyContinues = true
 
   def updateWorld() {
-    for (p <- persons) world(p.row, p.col) count p
+    for (p <- persons) {
+      if (p.row < 0 || p.col < 0)
+        println(p.id)
+      world(p.row, p.col) count p
+    }
   }
   updateWorld()
 
