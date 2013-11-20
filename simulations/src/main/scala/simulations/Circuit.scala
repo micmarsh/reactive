@@ -88,9 +88,7 @@ abstract class CircuitSimulator extends Simulator {
         case control::rest => {
 	        val (out0, out1) = if(rest.isEmpty) {
 		        val actualPos = position.mkString
-		        println("position: "+actualPos)
 		        val index = Integer.parseInt(actualPos, 2)
-		        println("translate to: "+index)
 	            (out(index), out(index+1))
 	        } else (new Wire, new Wire)
 	        val invControl = new Wire

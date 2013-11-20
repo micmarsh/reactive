@@ -54,10 +54,11 @@ class EpidemySimulator extends Simulator {
       else {
         val sickLocations = locations(_.sick)
         //should be cool cause deadsys stay sick
-        val noSick = rooms.diff(sickLocations)
-        val wrapped = noSick.map{case (r, c) => (if (r >= roomRows) r - roomRows else r,
+        val wrapped = rooms.map{case (r, c) => (if (r >= roomRows) r - roomRows else r,
         										if ( c >= roomColumns) c - roomColumns else c)}
-        wrapped
+        val noSick = wrapped.diff(sickLocations)
+        
+        noSick
       }
     }
     
@@ -99,7 +100,7 @@ class EpidemySimulator extends Simulator {
     def move:Unit = {
       val adjacent = Vector((row, col+1), (row+1, col), (row-1, col), (row, col-1))
       val choices = elminateRooms(adjacent)
-      if(choices.length > 0) makeMove(choices)	
+      if(choices.length > 0) makeMove(choices)
       postMove
     }
     

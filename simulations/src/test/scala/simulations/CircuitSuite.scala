@@ -145,7 +145,7 @@ class CircuitSuite extends CircuitSimulator with FunSuite {
     //okay interesting, flipping first when there's 8 outputs also throws this shit over to 2
     
     //right now focus on the case with 4, b/c it will probably lead to victory
-    assert(outputs(1).getSignal === true, "output to 1")
+    assert(outputs(2).getSignal === true, "output to 1")
     
     
   }
