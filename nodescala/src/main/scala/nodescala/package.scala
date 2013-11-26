@@ -12,7 +12,7 @@ package object nodescala {
 
   /** Adds extensions methods to the `Future` companion object.
    */
-  implicit class FutureCompanionOps[T](val f: Future.type) extends AnyVal {
+  implicit class FutureCompanionOps[T](val f: Future.type)  {
 
     /** Returns a future that is always completed with `value`.
      */
@@ -29,8 +29,23 @@ package object nodescala {
      *  The values in the list are in the same order as corresponding futures `fs`.
      *  If any of the futures `fs` fails, the resulting future also fails.
      */
-    def all[T](fs: List[Future[T]]): Future[List[T]] = async {
-      fs map (await(_))
+    def all[T](fs: List[Future[T]]): Future[List[T]] = async {      
+      /*
+       Looks good, other than that damn error that requires internets to debug
+       * */
+      var mutFS = fs
+      var result = List[T]()
+      
+      while (mutFS != Nil) {   
+        val lulz = await {mutFS.head} 
+        result = ( lulz match {
+          case error: Throwable => throw error
+          case thing: T => thing
+        }) :: result
+        mutFS = mutFS.tail
+      }
+      
+      result.reverse
     }
 
     /** Given a list of futures `fs`, returns the future holding the value of the future from `fs` that completed first.
