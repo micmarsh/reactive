@@ -30,11 +30,16 @@ trait NodeScala {
    *  @param body         the response to write back
    */
   private def respond(exchange: Exchange, token: CancellationToken, response: Response): Unit = {
-    for (str <- response) {
-      if (!token.isCancelled) {
-        exchange write str
+    val working = Future.run() { ctx => 
+      Future {
+        for (str <- response) {
+	      if (ctx.nonCancelled && token.nonCancelled) {
+	        exchange write str
+	      }
+        }
       }
     }
+    Future.delay(20 seconds) onComplete {case _ => working.unsubscribe}
   }
 
   /** A server:
@@ -56,13 +61,8 @@ trait NodeScala {
 	        case (req, ex) => respond(ex, ctx, handler(req))
 	      }
 	    }
-	  }	  
+	  }
     }
-    
-    Future.delay(20 seconds) onComplete {
-      case _ => sub.unsubscribe
-    }
-    
     sub
   }
 

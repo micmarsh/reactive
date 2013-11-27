@@ -32,11 +32,7 @@ package object nodescala {
       result.reverse
     }
   
-  def realRun()(f: CancellationToken => Future[Unit]): Subscription =  { /*
-    So what the hello is going on here? the things that you're acually cancelling seems iffy
-    Maybe you can call f(), get some shit back, and do something to it in the unsub of 
-    the sub you're gonna return. K.
-    * */
+  def realRun()(f: CancellationToken => Future[Unit]): Subscription =  { 
      val sub = CancellationTokenSource()
      f(sub.cancellationToken)
      sub
