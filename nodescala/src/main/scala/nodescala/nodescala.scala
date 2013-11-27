@@ -29,7 +29,13 @@ trait NodeScala {
    *  @param token        the cancellation token for
    *  @param body         the response to write back
    */
-  private def respond(exchange: Exchange, token: CancellationToken, response: Response): Unit = ???
+  private def respond(exchange: Exchange, token: CancellationToken, response: Response): Unit = {
+    for (str <- response) {
+      if (!token.isCancelled) {
+        exchange write str
+      }
+    }
+  }
 
   /** A server:
    *  1) creates and starts an http listener
@@ -41,7 +47,24 @@ trait NodeScala {
    *  @param handler        a function mapping a request to a response
    *  @return               a subscription that can stop the server and all its asynchronous operations *entirely*.
    */
-  def start(relativePath: String)(handler: Request => Response): Subscription = ???
+  def start(relativePath: String)(handler: Request => Response): Subscription = {
+    val listener = createListener(relativePath)
+    val sub = Future.run() { ctx =>
+      Future {
+	    while (ctx.nonCancelled) {
+	      listener.nextRequest.onSuccess{
+	        case (req, ex) => respond(ex, ctx, handler(req))
+	      }
+	    }
+	  }	  
+    }
+    
+    Future.delay(20 seconds) onComplete {
+      case _ => sub.unsubscribe
+    }
+    
+    sub
+  }
 
 }
 
@@ -120,7 +143,6 @@ object NodeScala {
         promise success (exchange.request, exchange)
         self.removeContext
       })
-      
       promise.future
     }
   }
@@ -130,7 +152,6 @@ object NodeScala {
       private val s = HttpServer.create(new InetSocketAddress(port), 0)
       private val executor = new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue)
       s.setExecutor(executor)
-
       def start() = {
         s.start()
         new Subscription {
@@ -140,11 +161,9 @@ object NodeScala {
           }
         }
       }
-
       def createContext(handler: Exchange => Unit) = s.createContext(relativePath, new HttpHandler {
         def handle(httpxchg: HttpExchange) = handler(Exchange(httpxchg))
       })
-
       def removeContext() = s.removeContext(relativePath)
     }
   }
