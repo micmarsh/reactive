@@ -32,13 +32,12 @@ trait NodeScala {
   private def respond(exchange: Exchange, token: CancellationToken, response: Response): Unit = {
     val working = Future.run() { ctx => 
       Future {
-        for (str <- response) {
-	      if (ctx.nonCancelled && token.nonCancelled) {
-	        exchange write str
-	      }
+        while(response.hasNext && ctx.nonCancelled && token.nonCancelled) {
+	        exchange write response.next
         }
       }
     }
+
     Future.delay(20 seconds) onComplete { case _ => working.unsubscribe }
   }
 
@@ -63,7 +62,7 @@ trait NodeScala {
 	    }
 	  }
     }
-    sub
+    Subscription(sub, listener.start())
   }
 
 }
