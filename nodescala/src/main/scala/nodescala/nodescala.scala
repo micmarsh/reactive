@@ -39,7 +39,7 @@ trait NodeScala {
         }
       }
     }
-    Future.delay(20 seconds) onComplete {case _ => working.unsubscribe}
+    Future.delay(20 seconds) onComplete { case _ => working.unsubscribe }
   }
 
   /** A server:

@@ -70,7 +70,8 @@ package object nodescala {
       val promise = Promise[T]()
       for (f <- fs)
         f onComplete {
-	        case result:Try[T] => promise complete result
+	        case result:Try[T] => 
+	          promise tryComplete result 
       	}
       promise.future
     }
