@@ -30,9 +30,12 @@ trait NodeScala {
    *  @param body         the response to write back
    */
   private def respond(exchange: Exchange, token: CancellationToken, response: Response): Unit = {
-        while(response.hasNext && token.nonCancelled) {
+        println("about to respond")
+		while(response.hasNext && token.nonCancelled) {
 	        exchange write response.next
         }
+        println("done writing response, about to close")
+        exchange.close
   }
 
   /** A server:
@@ -50,12 +53,19 @@ trait NodeScala {
     val sub = Future.run() { ctx =>
       Future {
 	    while (ctx.nonCancelled) {
-	      listener.nextRequest.onSuccess{
-	        case (req, ex) => respond(ex, ctx, handler(req))
+	      println("let's set dat listener")
+	      blocking {
+	        listener.nextRequest.onSuccess{
+		        case (req, ex) => {
+		          respond(ex, ctx, handler(req))
+		        }
+		      }
 	      }
+	      println(ctx.nonCancelled)
 	    }
 	  }
     }
+    println("starting server")
     Subscription(sub, listener.start())
   }
 
@@ -132,10 +142,14 @@ object NodeScala {
       //TODO: jus' wrap up the result of this promise
       //with createContext, first learn WTF an Exchange is
       val self = this
-      createContext((exchange:Exchange) => {
-        promise success (exchange.request, exchange)
-        self.removeContext
-      })
+      blocking { 
+	      createContext((exchange:Exchange) => {
+	        println("inside of exchange handler")
+	        promise success (exchange.request, exchange)
+	        self removeContext
+	      })
+      }
+      println("about to return from nextRequest")
       promise.future
     }
   }
