@@ -30,11 +30,9 @@ trait NodeScala {
    *  @param body         the response to write back
    */
   private def respond(exchange: Exchange, token: CancellationToken, response: Response): Unit = {
-        println("about to respond")
 		while(response.hasNext && token.nonCancelled) {
 	        exchange write response.next
         }
-        println("done writing response, about to close")
         exchange.close
   }
 
@@ -50,20 +48,22 @@ trait NodeScala {
    */
   def start(relativePath: String)(handler: Request => Response): Subscription = {
     val listener = createListener(relativePath)
-   
     val sub = Future.run() { ctx =>
+      
       Future {
-	    while (ctx.nonCancelled) {
-	      println("let's set dat listener")
-        listener.nextRequest.onSuccess{
-	        case (req, ex) => {
-	          respond(ex, ctx, handler(req))
-	        }
-	      }
-	      
-	      println(ctx.nonCancelled)
-	    }
-	  }
+        def setNextRequest():Unit = {
+            println("called setNextRequest once")
+	        listener.nextRequest.onSuccess{
+		        case (req, ex) => {
+		          respond(ex, ctx, handler(req))
+		          if (ctx.nonCancelled)
+		        	  setNextRequest
+		        }
+		     }
+         }
+        println("starting listener future")
+        setNextRequest 
+      }
     }
     println("starting server")
     Subscription(sub, listener.start())
@@ -139,17 +139,14 @@ object NodeScala {
      */
     def nextRequest(): Future[(Request, Exchange)] = {
       val promise = Promise[(Request, Exchange)]()
-      //TODO: jus' wrap up the result of this promise
-      //with createContext, first learn WTF an Exchange is
       val self = this
-      Future { 
+      blocking { 
 	      createContext((exchange:Exchange) => {
-	        println("inside of exchange handler")
 	        promise success (exchange.request, exchange)
-	        self removeContext
+	        self.removeContext
 	      })
       }
-      println("about to return from nextRequest")
+      println("yay returning promise.future")
       promise.future
     }
   }
