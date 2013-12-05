@@ -81,10 +81,12 @@ object WikipediaSuggest extends SimpleSwingApplication with ConcreteSwingApi wit
      */
 
     // TO IMPLEMENT
-    val searchTerms: Observable[String] = ???
+    val searchTerms: Observable[String] = searchTermField.textValues
 
     // TO IMPLEMENT
     val suggestions: Observable[Try[List[String]]] = ???
+    //TODO: prolly some combo of that textValue thing from earlier (maybe below as well), and the 
+    //suggestions function. Yeah, maybe this should be below
 
 
     // TO IMPLEMENT
