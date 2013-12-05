@@ -12,6 +12,8 @@ import rx.subscriptions.CompositeSubscription
 import rx.lang.scala.Observable
 import observablex._
 import search._
+import rx.lang.scala.subjects.PublishSubject
+
 
 trait WikipediaApi {
 
@@ -37,8 +39,7 @@ trait WikipediaApi {
      *
      * E.g. `"erik", "erik meijer", "martin` should become `"erik", "erik_meijer", "martin"`
      */
-    def sanitized: Observable[String] = ???
-
+    def sanitized: Observable[String] = obs.map((s) => s.replace(' ', '_'))
   }
 
   implicit class ObservableOps[T](obs: Observable[T]) {
@@ -48,15 +49,30 @@ trait WikipediaApi {
      *
      * E.g. `1, 2, 3, !Exception!` should become `Success(1), Success(2), Success(3), Failure(Exception), !TerminateStream!`
      */
-    def recovered: Observable[Try[T]] = ???
-
+    def recovered: Observable[Try[T]] = 
+      Observable(o => {
+        obs.subscribe((t:T) => o onNext Success(t), 
+            (e:Throwable) => {
+            	o onNext Failure(e)
+            	o.onCompleted
+            }, 
+            () => o.onCompleted)
+      })
     /** Emits the events from the `obs` observable, until `totalSec` seconds have elapsed.
      *
      * After `totalSec` seconds, if `obs` is not yet completed, the result observable becomes completed.
      *
      * Note: uses the existing combinators on observables.
      */
-    def timedOut(totalSec: Long): Observable[T] = ???
+    def timedOut(totalSec: Long): Observable[T] = {
+      val timed:Observable[T] = Observable(o => { 
+        obs.subscribe((t:T) => o onNext t,
+            (e:Throwable) => o onError e,
+            () => o.onCompleted)
+      })
+      Observable.interval(totalSec seconds)
+      timed
+    }
 
 
     /** Given a stream of events `obs` and a method `requestMethod` to map a request `T` into
