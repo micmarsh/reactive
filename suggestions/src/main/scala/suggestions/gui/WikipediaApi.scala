@@ -33,7 +33,7 @@ trait WikipediaApi {
    */
   def wikiPageResponseStream(term: String): Observable[String] = ObservableEx(wikipediaPage(term))
 
-  implicit class StringObservableOps(obs: Observable[String]) {
+  implicit class StringObservableOps(obs: Observable[String])  {
 
     /** Given a stream of search terms, returns a stream of search terms with spaces replaced by underscores.
      *
@@ -94,7 +94,7 @@ trait WikipediaApi {
      *
      * Observable(Success(1), Succeess(1), Succeess(1), Succeess(2), Succeess(2), Succeess(2), Succeess(3), Succeess(3), Succeess(3))
      */
-    def concatRecovered[S](requestMethod: T => Observable[S]): Observable[Try[S]] = obs.flatMap(requestMethod).recovered
+    def concatRecovered[S](requestMethod: T => Observable[S]): Observable[Try[S]] = obs flatMap requestMethod recovered
 
   }
 
