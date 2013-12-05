@@ -55,7 +55,8 @@ trait SwingApi {
     def textValues: Observable[String] = {
       val channel = PublishSubject[String](field.text)
       field subscribe { 
-        case ValueChanged(field) => channel.onNext(field.text)        
+        case ValueChanged(field) => channel.onNext(field.text)     
+        case _  => ()
       }
       channel
     }
@@ -73,6 +74,7 @@ trait SwingApi {
       val channel = PublishSubject[Button](button)
       button subscribe {
         case ButtonClicked(butt) => channel.onNext(butt)
+        case _ => ()
       }
       channel
     }
