@@ -52,9 +52,9 @@ trait WikipediaApi {
     def recovered: Observable[Try[T]] = 
       Observable(o => {
         obs.subscribe((t:T) => o onNext Success(t), 
-            (e:Throwable) => {
-            	o onNext Failure(e)
-            	o.onCompleted
+            (e:Throwable) =>{
+               o onNext Failure(e)
+               o.onCompleted
             }, 
             () => o.onCompleted)
       })
@@ -65,13 +65,7 @@ trait WikipediaApi {
      * Note: uses the existing combinators on observables.
      */
     def timedOut(totalSec: Long): Observable[T] = {
-      val timed:Observable[T] = Observable(o => { 
-        obs.subscribe((t:T) => o onNext t,
-            (e:Throwable) => o onError e,
-            () => o.onCompleted)
-      })
-      Observable.interval(totalSec seconds)
-      timed
+      obs takeUntil Observable.interval(totalSec seconds)
     }
 
 
@@ -100,7 +94,7 @@ trait WikipediaApi {
      *
      * Observable(Success(1), Succeess(1), Succeess(1), Succeess(2), Succeess(2), Succeess(2), Succeess(3), Succeess(3), Succeess(3))
      */
-    def concatRecovered[S](requestMethod: T => Observable[S]): Observable[Try[S]] = ???
+    def concatRecovered[S](requestMethod: T => Observable[S]): Observable[Try[S]] = obs.flatMap(requestMethod).recovered
 
   }
 
