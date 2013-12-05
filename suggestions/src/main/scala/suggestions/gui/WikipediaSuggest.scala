@@ -80,25 +80,21 @@ object WikipediaSuggest extends SimpleSwingApplication with ConcreteSwingApi wit
      *  `myEditorPane.text = "act"` : sets the content of `myEditorPane` to "act"
      */
 
-    // TO IMPLEMENT
     val searchTerms: Observable[String] = searchTermField.textValues
 
-    // TO IMPLEMENT
-    val suggestions: Observable[Try[List[String]]] = ???
-    //TODO: prolly some combo of that textValue thing from earlier (maybe below as well), and the 
-    //suggestions function. Yeah, maybe this should be below
+    val obsSuggestions: String => Observable[List[String]] = Search.wikipediaSuggestionJson _ andThen ObservableEx.apply _    
+    val suggestions: Observable[Try[List[String]]] = searchTerms flatMap obsSuggestions recovered
 
-
-    // TO IMPLEMENT
     val suggestionSubscription: Subscription =  suggestions.observeOn(eventScheduler) subscribe {
-      x => ???
+      x => if (x.isSuccess) suggestionList.listData = x.get
     }
 
-    // TO IMPLEMENT
-    val selections: Observable[String] = ???
-
-    // TO IMPLEMENT
-    val pages: Observable[Try[String]] = ???
+    val selections: Observable[String] = 
+      button.clicks.map((b) => suggestionList.selection.items.head).sanitized
+    // Idea here: on each click (button.clicks.map/flat), need to grab the selected term from suggestionList
+    
+    val obsPages: String => Observable[String] = Search.wikipediaPageJson _ andThen ObservableEx.apply _
+    val pages: Observable[Try[String]] = selections flatMap obsPages recovered
 
     // TO IMPLEMENT
     val pageSubscription: Subscription = pages.observeOn(eventScheduler) subscribe {
