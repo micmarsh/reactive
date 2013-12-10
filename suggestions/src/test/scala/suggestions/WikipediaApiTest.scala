@@ -67,4 +67,13 @@ class WikipediaApiTest extends FunSuite {
     }
     assert(total == (1 + 1 + 2 + 1 + 2 + 3), s"Sum: $total")
   }
+  
+  test("problems with recovered") {
+    val emptyList = Observable.apply(List())
+    val recovered = emptyList.recovered
+    recovered.subscribe((t) => {
+      println(t)
+     })
+
+  }
 }
