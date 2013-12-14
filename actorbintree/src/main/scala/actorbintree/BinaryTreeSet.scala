@@ -106,21 +106,20 @@ class BinaryTreeNode(val elem: Int, initiallyRemoved: Boolean) extends Actor {
   val normal: Receive = { 
     case Insert(requestor, id, newElem) => handleInsert(requestor, id, newElem)
     case Contains(requestor, id, checkElem) => handleContains(requestor, id, checkElem)
+    case Remove(r, id, e) => handleRemove(r, id, e)
   }
   
   
   def handleInsert(requestor:ActorRef, id:Int, newElem:Int) = {
-    //This currently does not take removed nodes into account
-    def insertIntoSide(side: Position) = 
-      subtrees get side match {
+    def insertIntoSide(side: Position) = subtrees get side match {
         case Some(node) => node ! Insert(requestor, id, newElem)
         case None => 
           subtrees = subtrees + (side -> context.actorOf(BinaryTreeNode.props(newElem, false)))
           requestor ! OperationFinished(id)
       }
-    
     if (newElem == elem && removed) {
       removed = false
+      requestor ! OperationFinished(id)
     } else if (newElem > elem) {
       insertIntoSide(Right)
     } else {
@@ -129,8 +128,7 @@ class BinaryTreeNode(val elem: Int, initiallyRemoved: Boolean) extends Actor {
   }
   
   def handleContains(requestor: ActorRef, id: Int, checkElem: Int) = {
-    def checkSide(side: Position) = 
-      subtrees get side match {
+    def checkSide(side: Position) = subtrees get side match {
         case Some(node) => node ! Contains(requestor, id, checkElem)
         case None => requestor ! ContainsResult(id, false)
       }
@@ -140,6 +138,20 @@ class BinaryTreeNode(val elem: Int, initiallyRemoved: Boolean) extends Actor {
       checkSide(Right)
     else 
       checkSide(Left)
+  }
+  
+   def handleRemove(requestor: ActorRef, id: Int, checkElem: Int) = {
+    def removeSide(side: Position) = subtrees get side match {
+        case Some(node) => node ! Remove(requestor, id, checkElem)
+        case None => requestor ! OperationFinished(id)
+      }
+    if (elem == checkElem){
+      removed = true
+      requestor ! OperationFinished(id)
+    } else if (checkElem > elem)
+      removeSide(Right)
+    else 
+      removeSide(Left)
   }
   
 
