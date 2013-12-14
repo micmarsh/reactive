@@ -37,7 +37,7 @@ class Counter extends Actor {
 moar traits
 
 trait ActorContext {
-    def become(behavor: Receive (<- ?????), discardOld: Boolean = true):Unit
+    def become(behavor: Receive ), discardOld: Boolean = true):Unit
     //WTF a receive is? oh, it's a PartialFunction[Any, Unit]
 }
 
