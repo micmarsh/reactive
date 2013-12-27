@@ -70,9 +70,10 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
 	  persisting get id foreach {
 	    case (_, replyTo) =>
 	      persisting -= id
-	      if (useOpAck  && replicatingIsEmpty(id))
-	    	  replyTo ! OperationAck(id)
-	      else
+	      if (useOpAck){
+	          if(replicatingIsEmpty(id))
+	        	  replyTo ! OperationAck(id)
+	      } else
 	    	  replyTo ! SnapshotAck(key, id)
 	  }
   } 
@@ -149,10 +150,9 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
 	      for (replica <- newReplicas) {
 	        var replicator = context actorOf Replicator.props(replica)
 	        for ((key, value) <- kv)
-	          replicator ! Replicate(key, Some(value), 42)
+	          replicator ! Replicate(key, Some(value), 42L)
 	        secondaries += (replica -> replicator)
 	        replicators += replicator
-	        
 	      }
       }
       
