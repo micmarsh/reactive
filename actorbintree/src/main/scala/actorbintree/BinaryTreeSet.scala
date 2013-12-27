@@ -200,7 +200,7 @@ class BinaryTreeNode(val elem: Int, initiallyRemoved: Boolean) extends Actor {
     case fin:OperationFinished => {
       if (expected.isEmpty){
         context.parent ! CopyFinished
-        context become normal 
+        context stop self
       } else
     	 context become copying(expected, true)
     }
@@ -208,7 +208,7 @@ class BinaryTreeNode(val elem: Int, initiallyRemoved: Boolean) extends Actor {
       val newSet = expected - context.sender
       if (newSet.isEmpty && insertConfirmed){
         context.parent ! CopyFinished
-        context become normal
+        context stop self
       } else
     	context become copying(newSet, insertConfirmed)
 
