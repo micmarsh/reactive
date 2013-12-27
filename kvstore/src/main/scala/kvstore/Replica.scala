@@ -54,15 +54,17 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
      persistence ! request   
   }
   
+  var cancel:Option[akka.actor.Cancellable] = None
+  
   def primaryPersist(id: Long, request:Persist, replyTo: ActorRef) {
 	persist(id, request, replyTo)
     //primary only
     val duration = Duration.create(1000, unit)
     
-    context.system.scheduler.scheduleOnce(duration) {
+    cancel = Some(context.system.scheduler.scheduleOnce(duration) {
       persisting -= id
       replyTo ! OperationFailed(id)
-    }
+    })
   }
   
   def persisted(p: Persisted, useOpAck: Boolean) {
@@ -71,8 +73,12 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
 	    case (_, replyTo) =>
 	      persisting -= id
 	      if (useOpAck){
-	          if(replicatingIsEmpty(id))
+	          println("persisted!!!!!! " + key)
+	          if(replicatingIsEmpty(id)) {
+	              println("acknowledging op from persisted")
 	        	  replyTo ! OperationAck(id)
+	        	  cancel foreach (_.cancel)
+	          }
 	      } else
 	    	  replyTo ! SnapshotAck(key, id)
 	  }
@@ -100,10 +106,15 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
   
   def replicated(r:Replicated) {
     val Replicated(key, id) = r
+    println("woo about to do replicated stuff "+ id)
+    println(replicating.get(id))
     replicating.get(id).foreach{case (replyTo, set) => {
       val newSet = set - sender
+//      println("replicated!!!! " + set.size + " -> " + newSet.size)
       if(newSet.isEmpty && persisting.get(id).isEmpty) {
+//        println("acknowledging op from replicated")
         replyTo ! OperationAck(id)
+        cancel foreach (_.cancel)
       }
       replicating += ( id -> (replyTo, newSet))
     }}
@@ -122,15 +133,17 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
       kv += (key -> value)
       
       val option = Some(value)
-      replicators foreach (_ ! Replicate(key, option, id))
+      
       replicating += (id -> (sender,replicators))
+      replicators foreach (_ ! Replicate(key, option, id))
+      	
       primaryPersist(id,  Persist(key, option, id), sender)
       
     case Remove(key, id) =>
       kv -= key
       
-      replicators foreach (_ ! Replicate(key, None, id))
       replicating += (id -> (sender,replicators))
+      replicators foreach (_ ! Replicate(key, None, id))
 
       primaryPersist(id, Persist(key, None, id), sender)
 
@@ -150,7 +163,7 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
 	      for (replica <- newReplicas) {
 	        var replicator = context actorOf Replicator.props(replica)
 	        for ((key, value) <- kv)
-	          replicator ! Replicate(key, Some(value), 42L)
+	          replicator ! Replicate(key, Some(value), 42)
 	        secondaries += (replica -> replicator)
 	        replicators += replicator
 	      }

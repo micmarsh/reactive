@@ -44,13 +44,13 @@ class Replicator(val replica: ActorRef) extends Actor {
     	acks += (seq -> (sender, replicate))
     	
     case SnapshotAck(key, seq) =>
-       acks get seq match {
-         case None =>
-         case Some((respondTo, request)) =>
+       acks get seq foreach {
+         case (respondTo, request) =>
            val Replicate(key, o, id) = request
            acks -= seq
            respondTo ! Replicated(key, id)
-       }
+        }
+
   }
   
   val unit = java.util.concurrent.TimeUnit.MILLISECONDS
