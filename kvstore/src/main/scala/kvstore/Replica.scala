@@ -67,11 +67,10 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
   
   def persisted(p: Persisted, useOpAck: Boolean) {
       val Persisted(key , id) = p 
-	  persisting get id match {
-	    case None =>
-	    case Some((_, replyTo)) =>
+	  persisting get id foreach {
+	    case (_, replyTo) =>
 	      persisting -= id
-	      if (useOpAck)
+	      if (useOpAck  && replicatingIsEmpty(id))
 	    	  replyTo ! OperationAck(id)
 	      else
 	    	  replyTo ! SnapshotAck(key, id)
@@ -90,6 +89,26 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
   
   arbiter ! Join
 
+  var replicating = Map.empty[Long, (ActorRef, Set[ActorRef])]
+  def replicatingIsEmpty(id: Long):Boolean = {
+    replicating get id match {
+      case None => true
+      case Some((_, set)) => set.isEmpty
+    }
+  }
+  
+  def replicated(r:Replicated) {
+    val Replicated(key, id) = r
+    replicating.get(id).foreach{case (replyTo, set) => {
+      val newSet = set - sender
+      if(newSet.isEmpty && persisting.get(id).isEmpty) {
+        replyTo ! OperationAck(id)
+      }
+      replicating += ( id -> (replyTo, newSet))
+    }}
+    
+  }
+  
   def receive = {
     case JoinedPrimary   =>
     	context.become(leader)
@@ -103,24 +122,23 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
       
       val option = Some(value)
       replicators foreach (_ ! Replicate(key, option, id))
+      replicating += (id -> (sender,replicators))
       primaryPersist(id,  Persist(key, option, id), sender)
-//      sender ! OperationAck(id)
-
       
     case Remove(key, id) =>
       kv -= key
       
       replicators foreach (_ ! Replicate(key, None, id))
-      primaryPersist(id, Persist(key, None, id), sender)
-//      sender ! OperationAck(id)
+      replicating += (id -> (sender,replicators))
 
-      
+      primaryPersist(id, Persist(key, None, id), sender)
+
     case Get(key, id) =>
      val option = kv get key
      sender ! GetResult(key, option, id)
      
+    case r:Replicated => replicated(r)
     case r:Replicas => replicate(r)
-
     case p:Persisted => persisted(p, true)
   }
   
